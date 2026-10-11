@@ -18,7 +18,7 @@ targets:
     platform: iOS
     sources:
       - path: App/MochiApp.swift
-      - path: Assets
+      - path: Assets.xcassets
         buildPhase: resources
     settings:
       base:
@@ -30,7 +30,7 @@ targets:
     sources:
       - App
       - Shared
-      - path: Assets
+      - path: Assets.xcassets
         buildPhase: resources
     settings:
       base:
@@ -46,7 +46,7 @@ targets:
     sources:
       - Shield
       - Shared
-      - path: Assets
+      - path: Assets.xcassets
         buildPhase: resources
     settings:
       base:

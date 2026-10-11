@@ -40,7 +40,9 @@ jobs:
           RECORD_PID=$!
           sleep 1
           xcrun simctl launch "$DEVICE_ID" com.sleepymochi.preview
-          sleep 16
+          sleep 4
+          xcrun simctl io "$DEVICE_ID" screenshot evidence/mochi-awake.png
+          sleep 12
           xcrun simctl io "$DEVICE_ID" screenshot evidence/mochi-final.png
           kill -INT "$RECORD_PID"
           wait "$RECORD_PID"

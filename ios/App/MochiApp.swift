@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct MochiApp: App {
@@ -25,7 +26,7 @@ struct PetView: View {
                     Spacer()
                     ZStack {
                         ForEach(0..<3) { index in
-                            Image(images[index]).resizable().scaledToFit()
+                            Image(uiImage: UIImage(named: images[index]) ?? UIImage()).resizable().scaledToFit()
                                 .opacity(pose == index ? 1 : 0)
                         }
                     }
