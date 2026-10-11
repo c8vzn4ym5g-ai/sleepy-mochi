@@ -1,0 +1,56 @@
+name: Mochi iPhone Simulator
+on:
+  workflow_dispatch:
+  push:
+    paths: ['ios/**', '.github/workflows/ios-simulator.yml']
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare project
+        run: |
+          brew install xcodegen
+          cd ios
+          xcodegen generate
+      - name: Select and boot iPhone
+        run: |
+          xcrun simctl list devices available --json > /tmp/devices.json
+          DEVICE_ID=$(python3 - <<'PY'
+          import json
+          devices=json.load(open('/tmp/devices.json'))['devices']
+          phones=[d for runtime,group in devices.items() if 'iOS' in runtime for d in group if 'iPhone' in d['name'] and d['isAvailable']]
+          print(phones[0]['udid'])
+          PY
+          )
+          echo "DEVICE_ID=$DEVICE_ID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$DEVICE_ID"
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+      - name: Build native visual prototype
+        run: |
+          xcodebuild -project ios/SleepyMochi.xcodeproj -scheme MochiPreview -configuration Debug -sdk iphonesimulator -destination "id=$DEVICE_ID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Record native app
+        run: |
+          mkdir -p evidence
+          xcrun simctl install "$DEVICE_ID" build/Build/Products/Debug-iphonesimulator/MochiPreview.app
+          xcrun simctl io "$DEVICE_ID" recordVideo evidence/mochi-preview.mp4 &
+          RECORD_PID=$!
+          sleep 1
+          xcrun simctl launch "$DEVICE_ID" com.sleepymochi.preview
+          sleep 16
+          xcrun simctl io "$DEVICE_ID" screenshot evidence/mochi-final.png
+          kill -INT "$RECORD_PID"
+          wait "$RECORD_PID"
+      - name: Compile Screen Time targets (not behavioral verification)
+        run: |
+          xcodebuild -project ios/SleepyMochi.xcodeproj -scheme Mochi -configuration Debug -sdk iphonesimulator -destination "id=$DEVICE_ID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Save recording
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mochi-simulator-evidence
+          path: evidence/
+          retention-days: 3
